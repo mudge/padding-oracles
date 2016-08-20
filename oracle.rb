@@ -41,24 +41,23 @@ puts "c3: #{c3.inspect}"
 
 puts (2..c.size).flat_map { |slice|
   m = Array.new(block_size)
-  *previous_blocks, target_block, next_block = c[0, slice]
+  *_, previous_block, target_block = c[0, slice]
 
   7.downto(0).each do |i|
-    m[i] = (0..255).find { |g|
-      pad = block_size - i
-      padding_size = block_size - i - 1
+    pad = block_size - i
+    padding_size = block_size - i - 1
 
+    m[i] = (0..255).find { |g|
       oracle(
         (
-          previous_blocks.flatten +
-          target_block[0, i] +
-          [target_block[i] ^ g ^ pad] +
-          padding_size.downto(1).map { |j| target_block[block_size - j] ^ m[block_size - j] ^ pad } +
-          next_block
+          previous_block[0, i] +
+          [previous_block[i] ^ g ^ pad] +
+          padding_size.downto(1).map { |j| previous_block[block_size - j] ^ m[block_size - j] ^ pad } +
+          target_block
         ).pack('C*')
-      )
-    }
+      ) && pad != g
+    } || pad
   end
 
   m
-}.pack('C*')
+}.tap { |x| puts x.inspect }.pack('C*')
