@@ -39,61 +39,26 @@ puts "c1: #{c1.inspect}"
 puts "c2: #{c2.inspect}"
 puts "c3: #{c3.inspect}"
 
-m0 = Array.new(8)
+puts (2..c.size).flat_map { |slice|
+  m = Array.new(block_size)
+  *previous_blocks, target_block, next_block = c[0, slice]
 
-7.downto(0).each do |i|
-  m0[i] = (0..255).find { |g|
-    pad = block_size - i
-    padding_size = block_size - i - 1
+  7.downto(0).each do |i|
+    m[i] = (0..255).find { |g|
+      pad = block_size - i
+      padding_size = block_size - i - 1
 
-    oracle(
-      (
-        c0[0, i] +
-        [c0[i] ^ g ^ pad] +
-        padding_size.downto(1).map { |j| c0[block_size - j] ^ m0[block_size - j] ^ pad } +
-        c1
-      ).pack('C*')
-    )
-  }
-end
+      oracle(
+        (
+          previous_blocks.flatten +
+          target_block[0, i] +
+          [target_block[i] ^ g ^ pad] +
+          padding_size.downto(1).map { |j| target_block[block_size - j] ^ m[block_size - j] ^ pad } +
+          next_block
+        ).pack('C*')
+      )
+    }
+  end
 
-m1 = Array.new(8)
-
-7.downto(0).each do |i|
-  m1[i] = (0..255).find { |g|
-    pad = block_size - i
-    padding_size = block_size - i - 1
-
-    oracle(
-      (
-        c0 +
-        c1[0, i] +
-        [c1[i] ^ g ^ pad] +
-        padding_size.downto(1).map { |j| c1[block_size - j] ^ m1[block_size - j] ^ pad } +
-        c2
-      ).pack('C*')
-    )
-  }
-end
-
-m2 = Array.new(8)
-
-7.downto(0).each do |i|
-  m2[i] = (0..255).find { |g|
-    pad = block_size - i
-    padding_size = block_size - i - 1
-
-    oracle(
-      (
-        c0 +
-        c1 +
-        c2[0, i] +
-        [c2[i] ^ g ^ pad] +
-        padding_size.downto(1).map { |j| c2[block_size - j] ^ m2[block_size - j] ^ pad } +
-        c3
-      ).pack('C*')
-    )
-  }
-end
-
-puts (m0 + m1 + m2).pack('C*')
+  m
+}.pack('C*')
