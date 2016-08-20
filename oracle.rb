@@ -23,7 +23,7 @@ cipher.encrypt
 cipher.key = 'opensesame'
 cipher.iv = "\x01\x02\x03\x04\x05\x06\x07\x08"
 
-m = 'Computation Club is rather good'
+m = 'Computation Club is rather good, eh?'
 m0, m1, m2, m3 = m.unpack('C*').each_slice(block_size).entries
 puts "m0: #{m0.inspect}"
 puts "m1: #{m1.inspect}"
@@ -39,9 +39,8 @@ puts "c1: #{c1.inspect}"
 puts "c2: #{c2.inspect}"
 puts "c3: #{c3.inspect}"
 
-puts (2..c.size).flat_map { |slice|
+puts c.each_cons(2).flat_map { |previous_block, target_block|
   m = Array.new(block_size)
-  *_, previous_block, target_block = c[0, slice]
 
   7.downto(0).each do |i|
     pad = block_size - i
