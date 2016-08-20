@@ -39,16 +39,134 @@ puts "c1: #{c1.inspect}"
 puts "c2: #{c2.inspect}"
 puts "c3: #{c3.inspect}"
 
-# We're trying to recover this whole block of plain text
+m0 = Array.new(8)
+
+m0[7] = (0..255).find { |g|
+  oracle(
+    (
+      c0[0, 7] +
+      [c0[7] ^ g ^ 1] +
+      c1
+    ).pack('C*')
+  )
+}
+
+m0[6] = (0..255).find { |g|
+  oracle(
+    (
+      c0[0, 6] +
+      [
+        c0[6] ^ g ^ 2,
+        c0[7] ^ m0[7] ^ 2
+      ] +
+      c1
+    ).pack('C*')
+  )
+}
+
+m0[5] = (0..255).find { |g|
+  oracle(
+    (
+      c0[0, 5] +
+      [
+        c0[5] ^ g ^ 3,
+        c0[6] ^ m0[6] ^ 3,
+        c0[7] ^ m0[7] ^ 3
+      ] +
+      c1
+    ).pack('C*')
+  )
+}
+
+m0[4] = (0..255).find { |g|
+  oracle(
+    (
+      c0[0, 4] +
+      [
+        c0[4] ^ g ^ 4,
+        c0[5] ^ m0[5] ^ 4,
+        c0[6] ^ m0[6] ^ 4,
+        c0[7] ^ m0[7] ^ 4
+      ] +
+      c1
+    ).pack('C*')
+  )
+}
+
+m0[3] = (0..255).find { |g|
+  oracle(
+    (
+      c0[0, 3] +
+      [
+        c0[3] ^ g ^ 5,
+        c0[4] ^ m0[4] ^ 5,
+        c0[5] ^ m0[5] ^ 5,
+        c0[6] ^ m0[6] ^ 5,
+        c0[7] ^ m0[7] ^ 5
+      ] +
+      c1
+    ).pack('C*')
+  )
+}
+
+m0[2] = (0..255).find { |g|
+  oracle(
+    (
+      c0[0, 2] +
+      [
+        c0[2] ^ g ^ 6,
+        c0[3] ^ m0[3] ^ 6,
+        c0[4] ^ m0[4] ^ 6,
+        c0[5] ^ m0[5] ^ 6,
+        c0[6] ^ m0[6] ^ 6,
+        c0[7] ^ m0[7] ^ 6
+      ] +
+      c1
+    ).pack('C*')
+  )
+}
+
+m0[1] = (0..255).find { |g|
+  oracle(
+    (
+      c0[0, 1] +
+      [
+        c0[1] ^ g ^ 7,
+        c0[2] ^ m0[2] ^ 7,
+        c0[3] ^ m0[3] ^ 7,
+        c0[4] ^ m0[4] ^ 7,
+        c0[5] ^ m0[5] ^ 7,
+        c0[6] ^ m0[6] ^ 7,
+        c0[7] ^ m0[7] ^ 7
+      ] +
+      c1
+    ).pack('C*')
+  )
+}
+
+m0[0] = (0..255).find { |g|
+  oracle(
+    (
+      [
+        c0[0] ^ g ^ 8,
+        c0[1] ^ m0[1] ^ 8,
+        c0[2] ^ m0[2] ^ 8,
+        c0[3] ^ m0[3] ^ 8,
+        c0[4] ^ m0[4] ^ 8,
+        c0[5] ^ m0[5] ^ 8,
+        c0[6] ^ m0[6] ^ 8,
+        c0[7] ^ m0[7] ^ 8
+      ] +
+      c1
+    ).pack('C*')
+  )
+}
+
+puts m0.pack('C*')
+
 m1 = Array.new(8)
 
-# Let's try to decrypt c1 starting from the last character
-# g is our guess
 m1[7] = (0..255).find { |g|
-
-  # Let's just take c0 + c1 and forget c2 and c3
-  # Let's guess the last byte of c1 by XORing it with our guess and \x01
-  # If it returns true then we've discovered the last byte of c1!
   oracle(
     (
       c0 +
@@ -60,8 +178,6 @@ m1[7] = (0..255).find { |g|
 }
 
 m1[6] = (0..255).find { |g|
-
-  # Let's do the next one by making the padding 2 2
   oracle(
     (
       c0 +
@@ -76,8 +192,6 @@ m1[6] = (0..255).find { |g|
 }
 
 m1[5] = (0..255).find { |g|
-
-  # And so on...
   oracle(
     (
       c0 +
@@ -93,8 +207,6 @@ m1[5] = (0..255).find { |g|
 }
 
 m1[4] = (0..255).find { |g|
-
-  # And so on...
   oracle(
     (
       c0 +
@@ -111,8 +223,6 @@ m1[4] = (0..255).find { |g|
 }
 
 m1[3] = (0..255).find { |g|
-
-  # And so on...
   oracle(
     (
       c0 +
@@ -130,8 +240,6 @@ m1[3] = (0..255).find { |g|
 }
 
 m1[2] = (0..255).find { |g|
-
-  # And so on...
   oracle(
     (
       c0 +
@@ -150,8 +258,6 @@ m1[2] = (0..255).find { |g|
 }
 
 m1[1] = (0..255).find { |g|
-
-  # And so on...
   oracle(
     (
       c0 +
@@ -171,8 +277,6 @@ m1[1] = (0..255).find { |g|
 }
 
 m1[0] = (0..255).find { |g|
-
-  # And so on...
   oracle(
     (
       c0 +
@@ -191,7 +295,8 @@ m1[0] = (0..255).find { |g|
   )
 }
 
-puts m1.pack('C*')
+puts (m0 + m1).pack('C*')
+
 m2 = Array.new(8)
 
 m2[7] = (0..255).find { |g|
@@ -331,4 +436,4 @@ m2[0] = (0..255).find { |g|
   )
 }
 
-puts (m1 + m2).pack('C*')
+puts (m0 + m1 + m2).pack('C*')
