@@ -1,26 +1,14 @@
 require 'cipher'
 require 'oracle'
 
-# A helper class to encrypt plain text and to decrypt and validate the padding of ciphertext
+ARGF.binmode
+
 cipher = Cipher.new('DES-CBC')
+cipher.key = 'opensesame'
+cipher.iv = "\x0\x1\x2\x3\x4\x5\x6\x7"
+ciphertext = ARGF.read
 
-# Our plain text message, given on STDIN
-plaintext = ARGF.read
-
-# Split our message into blocks appropriate for our cipher choice and print them
-cipher.split(plaintext).each_with_index do |block, i|
-  puts "m[#{i}] = #{block.inspect}"
-end
-
-# Encrypt our message
-ciphertext = cipher.encrypt(plaintext)
-
-# Split the ciphertext into appropriate blocks
-ciphertext_blocks = cipher.split(ciphertext)
-ciphertext_blocks.each_with_index do |block, i|
-  puts "c[#{i}] = #{block.inspect}"
-end
-
+# Attack the ciphertext and print the decrypted plaintext
 decrypted_plaintext = Oracle.new(cipher).attack(ciphertext)
 
-puts "m = #{decrypted_plaintext}"
+$stdout << decrypted_plaintext

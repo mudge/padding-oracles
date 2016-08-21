@@ -1,7 +1,8 @@
 require 'openssl'
 
 class Cipher
-  attr_reader :type, :key, :iv, :block_size
+  attr_reader :type, :block_size
+  attr_accessor :key, :iv
 
   def initialize(type)
     @type = type
