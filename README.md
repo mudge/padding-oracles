@@ -6,7 +6,7 @@ For the [23rd August 2016 meeting of London Computation Club](http://lanyrd.com/
 ## Usage
 
 ```shell
-$ echo 'This is an extremely sensitive matter: for your eyes only!' | ruby -Ilib oracle.rb
+$ echo 'This is an extremely sensitive matter: for your eyes only!' | ruby -Ilib oracle_attack.rb
 m[0] = [84, 104, 105, 115, 32, 105, 115, 32]
 m[1] = [97, 110, 32, 101, 120, 116, 114, 101]
 m[2] = [109, 101, 108, 121, 32, 115, 101, 110]
