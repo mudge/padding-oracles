@@ -1,62 +1,60 @@
-require 'openssl'
+require 'cipher'
 
-block_size = 8 # DES has a block size of 64 bits = 8 bytes
+# A helper class to encrypt plain text and to decrypt and validate the padding of ciphertext
+cipher = Cipher.new('DES-CBC')
 
-# Construct an oracle which returns false if there is a padding
-# error
-def oracle(ciphertext)
-  decipher = OpenSSL::Cipher::DES.new(:CBC)
-  decipher.decrypt
-  decipher.key = 'opensesame'
-  decipher.iv = "\x01\x02\x03\x04\x05\x06\x07\x08"
-  decipher.update(ciphertext)
-  decipher.final
+# Our plain text message, given on STDIN
+plaintext = ARGF.read
 
-  true
-rescue OpenSSL::Cipher::CipherError
-  false
+# Split our message into blocks appropriate for our cipher choice and print them
+cipher.split(plaintext).each_with_index do |block, i|
+  puts "m[#{i}] = #{block.inspect}"
 end
 
-# Generate the ciphertext
-cipher = OpenSSL::Cipher::DES.new(:CBC)
-cipher.encrypt
-cipher.key = 'opensesame'
-cipher.iv = "\x01\x02\x03\x04\x05\x06\x07\x08"
+# Encrypt our message
+ciphertext = cipher.encrypt(plaintext)
 
-m = 'Computation Club is rather good, eh?'
-m0, m1, m2, m3 = m.unpack('C*').each_slice(block_size).entries
-puts "m0: #{m0.inspect}"
-puts "m1: #{m1.inspect}"
-puts "m2: #{m2.inspect}"
-puts "m3: #{m3.inspect}"
+# Split the ciphertext into appropriate blocks
+ciphertext_blocks = cipher.split(ciphertext)
+ciphertext_blocks.each_with_index do |block, i|
+  puts "c[#{i}] = #{block.inspect}"
+end
 
-ciphertext = cipher.update(m) + cipher.final
+# Let the attack commence!
+# Take each pair of blocks and attack them in turn (note that this skips the first block
+# as we can't recover that without guessing the IV)
+decrypted_plaintext = ciphertext_blocks.each_cons(2).flat_map { |previous_block, target_block|
 
-# Split the ciphertext into blocks
-c0, c1, c2, c3 = c = ciphertext.unpack('C*').each_slice(block_size).entries
-puts "c0: #{c0.inspect}"
-puts "c1: #{c1.inspect}"
-puts "c2: #{c2.inspect}"
-puts "c3: #{c3.inspect}"
+  # Create an empty block which we will populate with the decrypted plain text
+  m = Array.new(cipher.block_size)
 
-puts c.each_cons(2).flat_map { |previous_block, target_block|
-  m = Array.new(block_size)
+  # Decrypt each byte of the block starting from the end and working backwards
+  cipher.block_size.pred.downto(0).each do |i|
 
-  7.downto(0).each do |i|
-    pad = block_size - i
-    padding_size = block_size - i - 1
+    # The appropriate pad for this iteration (e.g. 1, 2, 3, 4, 5, 6, 7, 8)
+    pad = cipher.block_size - i
 
+    # The size of the padding for this iteration (e.g. to pad with (2, 2), (3, 3, 3), etc.)
+    padding_size = cipher.block_size - i - 1
+
+    # The bytes before the one we're trying to decrypt
+    butlast = previous_block[0, i]
+
+    # Generate the padding for this iteration
+    padding = padding_size.downto(1).map { |j| previous_block[cipher.block_size - j] ^ m[cipher.block_size - j] ^ pad }
+
+    # The key bit: exhaustively guess this byte by trying 0-255 and checking if it is a valid padding
+    # Also handle the special case when decrypting the truly final block which will already have
+    # valid padding: check that the pad and the guess are not the same and default to the pad if so.
     m[i] = (0..255).find { |g|
-      oracle(
-        (
-          previous_block[0, i] +
-          [previous_block[i] ^ g ^ pad] +
-          padding_size.downto(1).map { |j| previous_block[block_size - j] ^ m[block_size - j] ^ pad } +
-          target_block
-        ).pack('C*')
-      ) && pad != g
+      crafted_ciphertext = butlast + [previous_block[i] ^ g ^ pad] + padding + target_block
+
+      cipher.valid_padding?(crafted_ciphertext.pack('C*')) && pad != g
     } || pad
   end
 
   m
-}.tap { |x| puts x.inspect }.pack('C*')
+}
+
+puts "m = #{decrypted_plaintext.inspect}"
+puts "m = #{decrypted_plaintext.pack('C*')}"
